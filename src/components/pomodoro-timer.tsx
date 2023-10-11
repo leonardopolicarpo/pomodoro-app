@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useInterval } from "../hooks/use-interval";
-import { Button } from "./Button";
+import { Button } from "./button";
 import { Timer } from "./timer";
+import bellStart from '../sounds/bell-start.mp3';
+import bellFinish from '../sounds/bell-finish.mp3';
+
+const audioStartWorking = new Audio(bellStart);
+const audioStopWorking = new Audio(bellFinish);
 
 interface Props {
   pomodoroTime: number;
@@ -12,10 +17,38 @@ interface Props {
 
 export function PomodoroTimer(props: Props): JSX.Element {
   const [mainTime, setMainTime] = useState(props.pomodoroTime);
+  const [timeCounting, setTimeCounting] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [resting, setResting] = useState(false);
+
+  useEffect(() => {
+    if (working) document.body.classList.add('working');
+    if (resting) document.body.classList.remove('working');
+  }, [working]);
 
   useInterval(() => {
     setMainTime(mainTime - 1);
-  }, 1000);
+  }, timeCounting ? 1000 : null);
+
+  const configureWork = () => {
+    setTimeCounting(true);
+    setWorking(true);
+    setResting(false);
+    setMainTime(props.pomodoroTime);
+    audioStartWorking.play();
+  };
+
+  const configureRest = (long: boolean) => {
+    setTimeCounting(true);
+    setWorking(false);
+    setResting(true);
+    
+    long
+      ? setMainTime(props.longRestTime)
+      : setMainTime(props.shortRestTime);
+
+    audioStopWorking.play()
+  };
 
   return (
     <div className="pomodoro">
@@ -24,17 +57,12 @@ export function PomodoroTimer(props: Props): JSX.Element {
       <Timer mainTime={mainTime}/>
 
       <div className="controls">
+        <Button text="Work" onClick={() => configureWork()} />
+        <Button text="Rest" onClick={() => configureRest(false)} />
         <Button
-          text="Olá"
-          onClick={() => console.log('Oi')}
-        />
-        <Button
-          text="Olá"
-          onClick={() => console.log('Oi')}
-        />
-        <Button
-          text="Olá"
-          onClick={() => console.log('Oi')}
+          className={!working && !resting ? 'hidden' : ''}
+          text={timeCounting ? 'Pause' : 'Play'}
+          onClick={() => setTimeCounting(!timeCounting)}
         />
       </div>
 
