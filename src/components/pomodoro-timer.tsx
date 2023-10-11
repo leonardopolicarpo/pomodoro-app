@@ -4,6 +4,7 @@ import { Button } from "./button";
 import { Timer } from "./timer";
 import bellStart from '../sounds/bell-start.mp3';
 import bellFinish from '../sounds/bell-finish.mp3';
+import { secondsToTime } from "../utils/seconds-to-time";
 
 const audioStartWorking = new Audio(bellStart);
 const audioStopWorking = new Audio(bellFinish);
@@ -20,14 +21,35 @@ export function PomodoroTimer(props: Props): JSX.Element {
   const [timeCounting, setTimeCounting] = useState(false);
   const [working, setWorking] = useState(false);
   const [resting, setResting] = useState(false);
+  const [cyclesQtdManager, setCyclesQtdManager] = useState(
+    new Array(props.cycles - 1).fill(true)
+  );
+  const [completedCycles, setCompletedCycles] = useState(0);
+  const [fullWorkingTime, setFullWorkingTime] = useState(0);
+  const [numberOfPomodoros, setNumberOfPomodoros] = useState(0);
 
   useEffect(() => {
     if (working) document.body.classList.add('working');
     if (resting) document.body.classList.remove('working');
-  }, [working]);
+
+    if (mainTime > 0) return;
+
+    if (working && cyclesQtdManager.length > 0) {
+      configureRest(false);
+      cyclesQtdManager.pop();
+    } else if (working && cyclesQtdManager.length <= 0) {
+      configureRest(false);
+      setCyclesQtdManager(new Array(props.cycles - 1).fill(true));
+      setCompletedCycles(completedCycles + 1);
+    }
+
+    if (working) setNumberOfPomodoros(numberOfPomodoros + 1);
+    if (resting) configureWork();
+  }, [working, resting, mainTime]);
 
   useInterval(() => {
     setMainTime(mainTime - 1);
+    if (working) setFullWorkingTime(fullWorkingTime + 1);
   }, timeCounting ? 1000 : null);
 
   const configureWork = () => {
@@ -52,7 +74,7 @@ export function PomodoroTimer(props: Props): JSX.Element {
 
   return (
     <div className="pomodoro">
-      <h2>You are: working</h2>
+      <h2>Tempo de: {working ? 'TRABALHO' : 'DESCANSO'}</h2>
 
       <Timer mainTime={mainTime}/>
 
@@ -67,9 +89,9 @@ export function PomodoroTimer(props: Props): JSX.Element {
       </div>
 
       <div className="details">
-        <p>Testanto Lorem ipsum dolor sit amet consectetur adipisicing magnam quis.</p>
-        <p>Testanto Lorem ipsum dolor sit amet consectetur adipisicing magnam quis.</p>
-        <p>Testanto Lorem ipsum dolor sit amet consectetur adipisicing magnam quis.</p>
+        <p>Ciclos concluídos: {completedCycles}</p>
+        <p>Horas trabalhadas: {secondsToTime(fullWorkingTime)}</p>
+        <p>Pomodoros concluídos: {numberOfPomodoros}</p>
       </div>
     </div>
   )
